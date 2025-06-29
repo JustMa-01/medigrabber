@@ -1,0 +1,20 @@
+# FastAPI and server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Database
+supabase==2.0.2
+psycopg2-binary==2.9.9
+
+# Media downloading
+yt-dlp==2023.11.16
+instaloader==4.10.3
+
+# Utilities
+pydantic==2.5.0
+python-dotenv==1.0.0
+aiofiles==23.2.1
+
+# Optional: For better performance
+orjson==3.9.10
