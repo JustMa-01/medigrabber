@@ -39,6 +39,6 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # Create downloads directory
 RUN mkdir -p /app/downloads
 
-EXPOSE 80
+EXPOSE 3000
 
 CMD ["/usr/bin/supervisord"]
