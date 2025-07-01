@@ -2,19 +2,19 @@
 FROM node:20 AS frontend-build
 
 WORKDIR /app
-COPY ../src/package*.json ./
+COPY package*.json ./
 RUN npm install
-COPY ../src ./
+COPY . ./
 RUN npm run build
 
 # ---- Build backend ----
 FROM python:3.11-slim AS backend-build
 
 WORKDIR /app/backend
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY backend/ .
 
 # ---- Final stage ----
 FROM python:3.11-slim
@@ -25,16 +25,16 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y ffmpeg nginx supervisor && rm -rf /var/lib/apt/lists/*
 
 # Copy backend code and dependencies
-COPY --from=backend-build /app /app
+COPY --from=backend-build /app/backend /app/backend
 
 # Copy built frontend to Nginx html directory
 COPY --from=frontend-build /app/dist /var/www/frontend
 
 # Nginx config
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY backend/nginx.conf /etc/nginx/nginx.conf
 
 # Supervisor config
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY backend/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Create downloads directory
 RUN mkdir -p /app/downloads

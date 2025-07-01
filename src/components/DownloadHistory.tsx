@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Download, Calendar, FileText, Video, Music, Image, Instagram, Youtube, AlertCircle } from 'lucide-react';
+import { Download, Calendar, FileText, Video, Music, Image, Instagram, Youtube, AlertCircle, Loader } from 'lucide-react';
 import type { Database } from '../lib/supabase';
 
 type DownloadRecord = Database['public']['Tables']['download_records']['Row'];
@@ -87,16 +87,27 @@ export function DownloadHistory() {
     }
   };
 
+  const handleDownloadFile = async (downloadId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      // In a real implementation, this would download the file
+      // For now, we'll just show a message
+      alert('File download would start here. This is a demo implementation.');
+    } catch (err: any) {
+      console.error('Download error:', err);
+      alert('Download failed: ' + err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-white/60 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 rounded w-1/4"></div>
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded"></div>
-            ))}
-          </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader className="h-8 w-8 animate-spin text-blue-600" />
         </div>
       </div>
     );
@@ -162,7 +173,10 @@ export function DownloadHistory() {
               </div>
 
               {download.status === 'completed' && download.file_path && (
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <button 
+                  onClick={() => handleDownloadFile(download.id)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
                   <Download className="h-4 w-4" />
                   Download
                 </button>

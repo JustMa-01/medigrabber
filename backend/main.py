@@ -41,14 +41,18 @@ app.add_middleware(
 
 # Environment variables
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 DOWNLOADS_DIR = Path("downloads")
 
 # Create downloads directory
 DOWNLOADS_DIR.mkdir(exist_ok=True)
 
 # Initialize Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+else:
+    logger.warning("Supabase credentials not found. Some features may not work.")
+    supabase = None
 
 # Pydantic models
 class YouTubeDownloadRequest(BaseModel):
@@ -72,6 +76,9 @@ class DownloadResponse(BaseModel):
 # Helper functions
 def get_user_subscription(user_id: str) -> Dict[str, Any]:
     """Get user's subscription details"""
+    if not supabase:
+        return {'plan_type': 'free'}
+    
     try:
         response = supabase.table('subscriptions').select('*').eq('user_id', user_id).eq('status', 'active').single().execute()
         return response.data if response.data else {'plan_type': 'free'}
@@ -81,6 +88,9 @@ def get_user_subscription(user_id: str) -> Dict[str, Any]:
 
 def create_download_record(user_id: str, platform: str, url: str, media_type: str, quality: str = 'standard') -> str:
     """Create a download record in the database"""
+    if not supabase:
+        return f"demo_{datetime.now().timestamp()}"
+    
     try:
         response = supabase.table('download_records').insert({
             'user_id': user_id,
@@ -97,6 +107,9 @@ def create_download_record(user_id: str, platform: str, url: str, media_type: st
 
 def update_download_record(download_id: str, **kwargs):
     """Update download record with new information"""
+    if not supabase:
+        return
+    
     try:
         supabase.table('download_records').update(kwargs).eq('id', download_id).execute()
     except Exception as e:
@@ -334,6 +347,9 @@ async def download_instagram(request: InstagramDownloadRequest, background_tasks
 @app.get("/api/download/{download_id}/status")
 async def get_download_status(download_id: str):
     """Get download status"""
+    if not supabase:
+        return {"status": "demo", "message": "Demo mode - no database connection"}
+    
     try:
         response = supabase.table('download_records').select('*').eq('id', download_id).single().execute()
         if not response.data:
@@ -348,6 +364,9 @@ async def get_download_status(download_id: str):
 @app.get("/api/download/{download_id}/file")
 async def download_file(download_id: str, user_id: str):
     """Download the actual file"""
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Service unavailable in demo mode")
+    
     try:
         # Get download record
         response = supabase.table('download_records').select('*').eq('id', download_id).eq('user_id', user_id).single().execute()
@@ -375,6 +394,9 @@ async def download_file(download_id: str, user_id: str):
 @app.get("/api/user/{user_id}/downloads")
 async def get_user_downloads(user_id: str, limit: int = 50, offset: int = 0):
     """Get user's download history"""
+    if not supabase:
+        return []
+    
     try:
         response = supabase.table('download_records').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(limit).offset(offset).execute()
         return response.data
@@ -386,6 +408,9 @@ async def get_user_downloads(user_id: str, limit: int = 50, offset: int = 0):
 @app.delete("/api/download/{download_id}")
 async def delete_download(download_id: str, user_id: str):
     """Delete a download and its files"""
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Service unavailable in demo mode")
+    
     try:
         # Get download record
         response = supabase.table('download_records').select('*').eq('id', download_id).eq('user_id', user_id).single().execute()
