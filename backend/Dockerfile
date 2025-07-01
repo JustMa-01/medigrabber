@@ -1,10 +1,10 @@
 # ---- Build frontend ----
 FROM node:20 AS frontend-build
 
-WORKDIR /app/dist
+WORKDIR /app
 COPY ../src/package*.json ./
 RUN npm install
-COPY ../src .
+COPY ../src ./
 RUN npm run build
 
 # ---- Build backend ----
